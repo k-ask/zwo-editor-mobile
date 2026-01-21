@@ -52,16 +52,52 @@ header h1 {
 
 .quick-add-toolbar {
     display: flex;
-    overflow-x: auto;
+    flex-direction: column;
     gap: 8px;
     padding: 8px 10px;
     background: #1a1a1a;
     border-bottom: 1px solid #333;
+}
+
+.qa-row {
+    display: flex;
+    overflow-x: auto;
+    gap: 8px;
     scrollbar-width: none;
 }
 
-.quick-add-toolbar::-webkit-scrollbar {
+.qa-row::-webkit-scrollbar {
     display: none;
+}
+
+.zones .qa-btn {
+    padding: 6px 12px;
+    min-width: 45px;
+    text-align: center;
+}
+
+.z1 {
+    border-bottom: 3px solid #7f7f7f !important;
+}
+
+.z2 {
+    border-bottom: 3px solid #3284c9 !important;
+}
+
+.z3 {
+    border-bottom: 3px solid #5aca5a !important;
+}
+
+.z4 {
+    border-bottom: 3px solid #ffca28 !important;
+}
+
+.z5 {
+    border-bottom: 3px solid #ff6924 !important;
+}
+
+.z6 {
+    border-bottom: 3px solid #ff3737 !important;
 }
 
 .qa-btn {
