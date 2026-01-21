@@ -12,15 +12,18 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
+
 <body>
     <header>
         <h1>ZWO Mobile</h1>
         <div id="totalDuration">00:00</div>
     </header>
 
+
     <div id="graphContainer">
         <canvas id="workoutChart"></canvas>
     </div>
+
 
     <div class="quick-add-toolbar">
         <div class="qa-row">
@@ -34,43 +37,3 @@
             <button onclick="handleAdd('SteadyState', {power: 0.80})" class="qa-btn z3">Z3</button>
             <button onclick="handleAdd('SteadyState', {power: 0.95})" class="qa-btn z4">Z4</button>
             <button onclick="handleAdd('SteadyState', {power: 1.10})" class="qa-btn z5">Z5</button>
-            <button onclick="handleAdd('SteadyState', {power: 1.25})" class="qa-btn z6">Z6</button>
-        </div>
-    </div>
-
-    <main id="segmentsList"></main>
-
-    <div class="bottom-bar">
-        <button id="addBtn">＋ Add</button>
-        <button id="loadBtn">📂 Load</button>
-        <button id="saveBtn">💾 Save</button>
-    </div>
-
-    <!-- Hidden File Input -->
-    <input type="file" id="fileInput" accept=".zwo" style="display: none;">
-
-    <!-- Segment Type Modal -->
-    <div id="typeModal" class="modal">
-        <div class="modal-content">
-            <h3>Add Segment</h3>
-            <div class="type-grid">
-                <button onclick="handleAdd('Warmup')">Warmup</button>
-                <button onclick="handleAdd('SteadyState')">Steady</button>
-                <button onclick="handleAdd('IntervalsT')">Intervals</button>
-                <button onclick="handleAdd('CoolDown')">CoolDown</button>
-                <button onclick="handleAdd('FreeRide')">FreeRide</button>
-            </div>
-            <button class="close-modal" onclick="closeModal()">Cancel</button>
-        </div>
-    </div>
-
-    <script src="editor.js"></script>
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/zwo-editor-mobile/sw.js');
-            });
-        }
-    </script>
-</body>
-</html>
