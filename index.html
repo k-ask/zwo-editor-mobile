@@ -14,14 +14,23 @@
 <body>
     <header>
         <h1>ZWO Mobile</h1>
-        <div id="totalDuration">0:00</div>
+        <div id="totalDuration">00:00</div>
     </header>
 
     <div id="graphContainer">
         <canvas id="workoutChart"></canvas>
     </div>
 
-    <main id="segmentsList"></main>
+    <div class="quick-add-toolbar">
+        <button onclick="handleAdd('Warmup')" class="qa-btn">Warmup</button>
+        <button onclick="handleAdd('SteadyState')" class="qa-btn">Steady</button>
+        <button onclick="handleAdd('IntervalsT')" class="qa-btn">Intervals</button>
+        <button onclick="handleAdd('CoolDown')" class="qa-btn">CoolDown</button>
+    </div>
+
+    <main id="segmentsList">
+        <!-- Segments will be injected here -->
+    </main>
 
     <div class="bottom-bar">
         <button id="addBtn">＋ Add</button>
@@ -29,8 +38,10 @@
         <button id="saveBtn">💾 Save</button>
     </div>
 
+    <!-- Hidden File Input -->
     <input type="file" id="fileInput" accept=".zwo" style="display: none;">
 
+    <!-- Segment Type Modal -->
     <div id="typeModal" class="modal">
         <div class="modal-content">
             <h3>Add Segment</h3>
