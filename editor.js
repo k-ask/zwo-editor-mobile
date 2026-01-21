@@ -44,8 +44,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function showModal() { document.getElementById('typeModal').style.display = 'flex'; }
 function closeModal() { document.getElementById('typeModal').style.display = 'none'; }
-function handleAdd(type) {
-    addSegment(type);
+function handleAdd(type, defaults = {}) {
+    addSegment(type, defaults);
     closeModal();
 }
 
@@ -243,8 +243,10 @@ function renderSegmentsList() {
 
         div.innerHTML = `
             <div class="segment-header">
-                <span class="segment-type" style="display:flex; align-items:center;"><span style="margin-right:8px; color:#666;">☰</span>${s.type}</span>
+                <span class="segment-type" style="display:flex; align-items:center;"><span style="margin-right:8px; color:#666; font-size:1.2rem;">☰</span>${s.type}</span>
                 <div class="segment-actions">
+                    <button class="btn-icon" onclick="moveSegment(${s.id}, -1)">▲</button>
+                    <button class="btn-icon" onclick="moveSegment(${s.id}, 1)">▼</button>
                     <button class="btn-icon" onclick="removeSegment(${s.id})">✕</button>
                 </div>
             </div>
