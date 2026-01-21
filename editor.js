@@ -154,13 +154,79 @@ function updateSegment(id, field, value) {
     updateUI();
 }
 
+// Touch-friendly Drag and Drop
+let touchStartY = 0;
+let draggedElement = null;
+let initialIdx = -1;
+
+function handleTouchStart(e) {
+    if (e.target.closest('.btn-icon') || e.target.tagName === 'INPUT') return;
+    draggedElement = e.currentTarget;
+    const touch = e.touches[0];
+    touchStartY = touch.clientY;
+    initialIdx = parseInt(draggedElement.dataset.index);
+
+    // Add a slight delay to distinguish from scroll
+    draggedElement.style.transition = 'none';
+    draggedElement.style.opacity = '0.7';
+    draggedElement.style.zIndex = '1000';
+}
+
+function handleTouchMove(e) {
+    if (!draggedElement) return;
+    const touch = e.touches[0];
+    const diff = touch.clientY - touchStartY;
+
+    // Prevent scrolling when dragging
+    if (Math.abs(diff) > 10) e.preventDefault();
+
+    draggedElement.style.transform = `translateY(${diff}px)`;
+
+    const elements = Array.from(document.querySelectorAll('.segment-item'));
+    const target = elements.find(el => {
+        if (el === draggedElement) return false;
+        const rect = el.getBoundingClientRect();
+        return touch.clientY > rect.top && touch.clientY < rect.bottom;
+    });
+
+    if (target) {
+        const targetIdx = parseInt(target.dataset.index);
+        if (targetIdx !== initialIdx) {
+            const item = segments.splice(initialIdx, 1)[0];
+            segments.splice(targetIdx, 0, item);
+            initialIdx = targetIdx;
+            renderSegmentsList();
+            // Re-bind dragged element
+            draggedElement = document.querySelector(`[data-id="${item.id}"]`);
+            draggedElement.style.opacity = '0.7';
+            draggedElement.style.zIndex = '1000';
+            touchStartY = touch.clientY; // Reset reference
+        }
+    }
+}
+
+function handleTouchEnd(e) {
+    if (!draggedElement) return;
+    draggedElement.style.opacity = '1';
+    draggedElement.style.transform = '';
+    draggedElement.style.zIndex = '';
+    draggedElement = null;
+    updateUI();
+}
+
 function renderSegmentsList() {
     const list = document.getElementById('segmentsList');
     list.innerHTML = '';
-    segments.forEach(s => {
+    segments.forEach((s, index) => {
         const div = document.createElement('div');
         div.className = 'segment-item';
+        div.dataset.id = s.id;
+        div.dataset.index = index;
         div.style.borderLeftColor = getZone(s.power || s.power_high || 0.5).color;
+
+        div.addEventListener('touchstart', handleTouchStart, { passive: false });
+        div.addEventListener('touchmove', handleTouchMove, { passive: false });
+        div.addEventListener('touchend', handleTouchEnd);
 
         let inputs = `<div class="seg-input-group"><label>Dur</label><input type="text" value="${formatTime(s.duration || s.on_duration)}" onchange="updateSegment(${s.id}, '${s.type === 'IntervalsT' ? 'on_duration' : 'duration'}', this.value)"></div>`;
         if (s.type === 'SteadyState') {
@@ -177,10 +243,8 @@ function renderSegmentsList() {
 
         div.innerHTML = `
             <div class="segment-header">
-                <span class="segment-type">${s.type}</span>
+                <span class="segment-type" style="display:flex; align-items:center;"><span style="margin-right:8px; color:#666;">☰</span>${s.type}</span>
                 <div class="segment-actions">
-                    <button class="btn-icon" onclick="moveSegment(${s.id}, -1)">▲</button>
-                    <button class="btn-icon" onclick="moveSegment(${s.id}, 1)">▼</button>
                     <button class="btn-icon" onclick="removeSegment(${s.id})">✕</button>
                 </div>
             </div>
@@ -205,4 +269,4 @@ function saveWorkout() {
     const a = document.createElement('a'); a.href = url; a.download = "workout.zwo"; a.click();
 }
 
-function loadFile(e) { /* Implementation omitted for brevity */ }
+function loadFile(e) { /* Implementation omitted for brevity, similar to desktop but simplified */ }
