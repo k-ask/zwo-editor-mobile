@@ -11,6 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body>
     <header>
         <h1>ZWO Mobile</h1>
@@ -22,15 +23,22 @@
     </div>
 
     <div class="quick-add-toolbar">
-        <button onclick="handleAdd('Warmup')" class="qa-btn">Warmup</button>
-        <button onclick="handleAdd('SteadyState')" class="qa-btn">Steady</button>
-        <button onclick="handleAdd('IntervalsT')" class="qa-btn">Intervals</button>
-        <button onclick="handleAdd('CoolDown')" class="qa-btn">CoolDown</button>
+        <div class="qa-row">
+            <button onclick="handleAdd('Warmup')" class="qa-btn">Ramp Up</button>
+            <button onclick="handleAdd('CoolDown')" class="qa-btn">RampDown</button>
+            <button onclick="handleAdd('IntervalsT')" class="qa-btn">Intervals</button>
+        </div>
+        <div class="qa-row zones">
+            <button onclick="handleAdd('SteadyState', {power: 0.50})" class="qa-btn z1">Z1</button>
+            <button onclick="handleAdd('SteadyState', {power: 0.65})" class="qa-btn z2">Z2</button>
+            <button onclick="handleAdd('SteadyState', {power: 0.80})" class="qa-btn z3">Z3</button>
+            <button onclick="handleAdd('SteadyState', {power: 0.95})" class="qa-btn z4">Z4</button>
+            <button onclick="handleAdd('SteadyState', {power: 1.10})" class="qa-btn z5">Z5</button>
+            <button onclick="handleAdd('SteadyState', {power: 1.25})" class="qa-btn z6">Z6</button>
+        </div>
     </div>
 
-    <main id="segmentsList">
-        <!-- Segments will be injected here -->
-    </main>
+    <main id="segmentsList"></main>
 
     <div class="bottom-bar">
         <button id="addBtn">＋ Add</button>
