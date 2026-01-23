@@ -129,8 +129,13 @@ function updateChart() {
         }
     });
     if (chart) {
-        chart.data.datasets[0].data = data;
-        chart.update();
+        try {
+            chart.data.datasets[0].data = data;
+            chart.update();
+        } catch (e) {
+            console.warn("Chart update failed", e);
+            // Don't showDebugError here to avoid spamming the user on every keystroke
+        }
     }
 }
 

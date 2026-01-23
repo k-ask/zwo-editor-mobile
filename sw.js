@@ -9,6 +9,7 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (e) => {
+    self.skipWaiting(); // Force new SW to enter activate state immediately
     e.waitUntil(
         caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
     );
@@ -16,11 +17,14 @@ self.addEventListener('install', (e) => {
 
 self.addEventListener('activate', (e) => {
     e.waitUntil(
-        caches.keys().then(keys => Promise.all(
-            keys.map(key => {
-                if (key !== CACHE_NAME) return caches.delete(key);
-            })
-        ))
+        Promise.all([
+            self.clients.claim(), // Force new SW to control loaded pages immediately
+            caches.keys().then(keys => Promise.all(
+                keys.map(key => {
+                    if (key !== CACHE_NAME) return caches.delete(key);
+                })
+            ))
+        ])
     );
 });
 
