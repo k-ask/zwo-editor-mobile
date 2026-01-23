@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zwo-mobile-v3';
+const CACHE_NAME = 'zwo-mobile-v4';
 const ASSETS = [
     '/zwo-editor-mobile/',
     '/zwo-editor-mobile/index.html',

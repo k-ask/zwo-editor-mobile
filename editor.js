@@ -213,7 +213,11 @@ let initialIdx = -1;
 
 function handleTouchStart(e) {
     if (e.target.closest('.btn-icon') || e.target.tagName === 'INPUT') return;
-    draggedElement = e.currentTarget;
+
+    // Find the draggable segment item from the header
+    draggedElement = e.currentTarget.closest('.segment-item');
+    if (!draggedElement) return;
+
     const touch = e.touches[0];
     touchStartY = touch.clientY;
     initialIdx = parseInt(draggedElement.dataset.index);
@@ -229,8 +233,8 @@ function handleTouchMove(e) {
     const touch = e.touches[0];
     const diff = touch.clientY - touchStartY;
 
-    // Prevent scrolling when dragging
-    if (Math.abs(diff) > 10) e.preventDefault();
+    // Always prevent default scrolling when dragging is active
+    if (e.cancelable) e.preventDefault();
 
     draggedElement.style.transform = `translateY(${diff}px)`;
 
@@ -250,8 +254,14 @@ function handleTouchMove(e) {
             renderSegmentsList();
             // Re-bind dragged element
             draggedElement = document.querySelector(`[data-id="${item.id}"]`);
-            draggedElement.style.opacity = '0.7';
-            draggedElement.style.zIndex = '1000';
+            if (draggedElement) {
+                draggedElement.style.opacity = '0.7';
+                draggedElement.style.zIndex = '1000';
+                // We also need to re-find the header to attach the 'active' touch listener if needed?
+                // Actually, the original touch session continues on the original element (header) 
+                // but visually we swapped DOM. 
+                // The browser tracks the touch target. The target is the header of the OLD element (now moved).
+            }
             touchStartY = touch.clientY; // Reset reference
         }
     }
@@ -275,10 +285,6 @@ function renderSegmentsList() {
         div.dataset.id = s.id;
         div.dataset.index = index;
         div.style.borderLeftColor = getZone(s.power || s.power_high || 0.5).color;
-
-        div.addEventListener('touchstart', handleTouchStart, { passive: false });
-        div.addEventListener('touchmove', handleTouchMove, { passive: false });
-        div.addEventListener('touchend', handleTouchEnd);
 
         // Helper for horizontal input group
         const mkInput = (label, val, field, type = 'number', unit = '') => `
@@ -316,6 +322,12 @@ function renderSegmentsList() {
             <div class="segment-details">${inputs}</div>
         `;
         list.appendChild(div);
+
+        // Attach touch listeners to the HEADER only
+        const header = div.querySelector('.segment-header');
+        header.addEventListener('touchstart', handleTouchStart, { passive: false });
+        header.addEventListener('touchmove', handleTouchMove, { passive: false });
+        header.addEventListener('touchend', handleTouchEnd);
     });
 }
 
