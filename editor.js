@@ -95,10 +95,41 @@ function updateUI() {
     updateStats();
 }
 
+function calculateTSS() {
+    let totalTSS = 0;
+    segments.forEach(s => {
+        let durationSec = s.duration;
+        let intensity = 0;
+
+        if (s.type === 'SteadyState') {
+            intensity = s.power; // already fraction of FTP
+            totalTSS += (s.duration / 3600) * (intensity * intensity) * 100;
+        } else if (s.type === 'IntervalsT') {
+            // On segment
+            let onTSS = (s.on_duration / 3600) * (s.on_power * s.on_power) * 100;
+            // Off segment
+            let offTSS = (s.off_duration / 3600) * (s.off_power * s.off_power) * 100;
+            totalTSS += (onTSS + offTSS) * s.repeat;
+        } else if (['Warmup', 'CoolDown', 'Ramp'].includes(s.type)) {
+            // Approximate linear ramp TSS: integrate (start + (end-start)*t/T)^2
+            // Simplification: use average power for short ramps, or exact formula
+            // Exact: (1/3) * (low^2 + low*high + high^2)
+            let meanSq = (Math.pow(s.power_low, 2) + s.power_low * s.power_high + Math.pow(s.power_high, 2)) / 3;
+            totalTSS += (s.duration / 3600) * meanSq * 100;
+        } else {
+            // FreeRide etc assuming 0.5 intensity for TSS estimate? or 0
+            totalTSS += (s.duration / 3600) * (0.5 * 0.5) * 100;
+        }
+    });
+    return Math.round(totalTSS);
+}
+
+
 function updateStats() {
     let totalSec = 0;
     segments.forEach(s => totalSec += (s.type === 'IntervalsT') ? s.repeat * (s.on_duration + s.off_duration) : s.duration);
     document.getElementById('totalDuration').innerText = formatTime(totalSec);
+    document.getElementById('totalTSS').innerText = `TSS: ${calculateTSS()}`;
 }
 
 function updateChart() {
@@ -134,7 +165,6 @@ function updateChart() {
             chart.update();
         } catch (e) {
             console.warn("Chart update failed", e);
-            // Don't showDebugError here to avoid spamming the user on every keystroke
         }
     }
 }
@@ -250,17 +280,28 @@ function renderSegmentsList() {
         div.addEventListener('touchmove', handleTouchMove, { passive: false });
         div.addEventListener('touchend', handleTouchEnd);
 
-        let inputs = `<div class="seg-input-group"><label>Dur</label><input type="text" value="${formatTime(s.duration || s.on_duration)}" onchange="updateSegment(${s.id}, '${s.type === 'IntervalsT' ? 'on_duration' : 'duration'}', this.value)"></div>`;
+        // Helper for horizontal input group
+        const mkInput = (label, val, field, type = 'number', unit = '') => `
+            <div class="seg-input-group">
+                <label>${label}</label>
+                <input type="${type}" value="${val}" onchange="updateSegment(${s.id}, '${field}', this.value)">
+                ${unit ? `<span class="unit-label">${unit}</span>` : ''}
+            </div>`;
+
+        let inputs = '';
         if (s.type === 'SteadyState') {
-            inputs += `<div class="seg-input-group"><label>Power%</label><input type="number" value="${Math.round(s.power * 100)}" onchange="updateSegment(${s.id}, 'power', this.value)"></div>`;
+            inputs += mkInput('Dur', formatTime(s.duration), 'duration', 'text');
+            inputs += mkInput('PWR', Math.round(s.power * 100), 'power', 'number', '%');
         } else if (['Warmup', 'CoolDown', 'Ramp'].includes(s.type)) {
-            inputs += `<div class="seg-input-group"><label>Start%</label><input type="number" value="${Math.round(s.power_low * 100)}" onchange="updateSegment(${s.id}, 'power_low', this.value)"></div>`;
-            inputs += `<div class="seg-input-group"><label>End%</label><input type="number" value="${Math.round(s.power_high * 100)}" onchange="updateSegment(${s.id}, 'power_high', this.value)"></div>`;
+            inputs += mkInput('Dur', formatTime(s.duration), 'duration', 'text');
+            inputs += mkInput('Start', Math.round(s.power_low * 100), 'power_low', 'number', '%');
+            inputs += mkInput('End', Math.round(s.power_high * 100), 'power_high', 'number', '%');
         } else if (s.type === 'IntervalsT') {
-            inputs = `<div class="seg-input-group"><label>Reps</label><input type="number" value="${s.repeat}" onchange="updateSegment(${s.id}, 'repeat', this.value)"></div>` + inputs;
-            inputs += `<div class="seg-input-group"><label>On%</label><input type="number" value="${Math.round(s.on_power * 100)}" onchange="updateSegment(${s.id}, 'on_power', this.value)"></div>`;
-            inputs += `<div class="seg-input-group"><label>OffDur</label><input type="text" value="${formatTime(s.off_duration)}" onchange="updateSegment(${s.id}, 'off_duration', this.value)"></div>`;
-            inputs += `<div class="seg-input-group"><label>Off%</label><input type="number" value="${Math.round(s.off_power * 100)}" onchange="updateSegment(${s.id}, 'off_power', this.value)"></div>`;
+            inputs += mkInput('Reps', s.repeat, 'repeat');
+            inputs += mkInput('On', formatTime(s.on_duration), 'on_duration', 'text');
+            inputs += mkInput('Pwr', Math.round(s.on_power * 100), 'on_power', 'number', '%');
+            inputs += mkInput('Off', formatTime(s.off_duration), 'off_duration', 'text');
+            inputs += mkInput('Pwr', Math.round(s.off_power * 100), 'off_power', 'number', '%');
         }
 
         div.innerHTML = `
