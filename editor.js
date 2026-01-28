@@ -324,6 +324,13 @@ function handleTouchEnd(e) {
     updateUI();
 }
 
+// Helper to get background color string
+function getZoneBg(power) {
+    const zone = getZone(power);
+    // Use opacity 0.2 for background
+    return zone.bg; // ZONES already has rgba(..., 0.2)
+}
+
 function renderSegmentsList() {
     const list = document.getElementById('segmentsList');
     list.innerHTML = '';
@@ -332,7 +339,21 @@ function renderSegmentsList() {
         div.className = 'segment-item';
         div.dataset.id = s.id;
         div.dataset.index = index;
+
+        // Default Border Color
         div.style.borderLeftColor = getZone(s.power || s.power_high || 0.5).color;
+
+        // Custom Background for Gradients
+        if (['Warmup', 'CoolDown', 'Ramp'].includes(s.type)) {
+            const startBg = getZoneBg(s.power_low);
+            const endBg = getZoneBg(s.power_high);
+            // Use linear-gradient, but we need to keep the border-left visible or consistent?
+            // Mobile style relies on border-left. Let's keep border-left but add gradient to background.
+            div.style.background = `linear-gradient(90deg, ${startBg}, ${endBg})`;
+        } else if (s.type === 'IntervalsBlock3') {
+            // Let's add gradient for Block3 too as a bonus/consistency if applicable, or keep it simple
+            // User asked for Ramp types specifically.
+        }
 
         // Helper for horizontal input group
         const mkInput = (label, val, field, type = 'number', unit = '') => `
