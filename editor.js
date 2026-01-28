@@ -47,8 +47,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('saveBtn').addEventListener('click', saveWorkout);
 
     // Initial Defaults
+    // Initial Defaults - Updated to just Warmup 10min
+    segments = []; // Ensure empty
     addSegment('Warmup', { duration: 600, power_low: 0.25, power_high: 0.75 });
-    addSegment('SteadyState', { duration: 300, power: 0.90 });
 
     try {
         updateUI();
@@ -368,12 +369,20 @@ function renderSegmentsList() {
             inputs += mkInput('P3', Math.round(s.pwr3 * 100), 'pwr3', 'number', '%');
         }
 
+        let labelType = s.type;
+        if (s.type === 'SteadyState') {
+            const z = getZone(s.power);
+            // Infer Zone Number from index in ZONES array
+            const zIdx = ZONES.indexOf(z) + 1;
+            labelType = `Zone ${zIdx}`;
+        }
+
         div.innerHTML = `
             <div class="segment-header">
                 <span class="segment-type" style="display:flex; align-items:center;">
                     <!-- Drag Handle Icon -->
                     <span class="drag-handle-icon" style="margin-right:8px; color:#666; font-size:1.4rem; padding:0 10px 0 0; touch-action:none;">☰</span>
-                    ${s.type}
+                    ${labelType}
                 </span>
                 <div class="segment-actions">
                     <button class="btn-icon" onclick="moveSegment(${s.id}, -1)">▲</button>
