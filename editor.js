@@ -256,9 +256,11 @@ let draggedElement = null;
 let initialIdx = -1;
 
 function handleTouchStart(e) {
-    if (e.target.closest('.btn-icon') || e.target.tagName === 'INPUT') return;
+    // Only allow drag if touching the handle specifically (the "hamburger" icon)
+    // We assume the handle has a class 'drag-handle' or 'segment-header' BUT user asked for "three lines mark"
+    if (!e.target.closest('.drag-handle-icon')) return;
 
-    // Find the draggable segment item from the header
+    // Find the draggable segment item
     draggedElement = e.currentTarget.closest('.segment-item');
     if (!draggedElement) return;
 
@@ -270,6 +272,9 @@ function handleTouchStart(e) {
     draggedElement.style.transition = 'none';
     draggedElement.style.opacity = '0.7';
     draggedElement.style.zIndex = '1000';
+
+    // Prevent scrolling while dragging
+    document.body.style.overflow = 'hidden';
 }
 
 function handleTouchMove(e) {
@@ -301,12 +306,9 @@ function handleTouchMove(e) {
             if (draggedElement) {
                 draggedElement.style.opacity = '0.7';
                 draggedElement.style.zIndex = '1000';
-                // We also need to re-find the header to attach the 'active' touch listener if needed?
-                // Actually, the original touch session continues on the original element (header) 
-                // but visually we swapped DOM. 
-                // The browser tracks the touch target. The target is the header of the OLD element (now moved).
+                draggedElement.style.transform = `translateY(${diff}px)`; // Keep following finger
             }
-            touchStartY = touch.clientY; // Reset reference
+            touchStartY = touch.clientY - diff; // Adjust reference to keep relative position smooth
         }
     }
 }
@@ -317,6 +319,7 @@ function handleTouchEnd(e) {
     draggedElement.style.transform = '';
     draggedElement.style.zIndex = '';
     draggedElement = null;
+    document.body.style.overflow = ''; // Restore scrolling
     updateUI();
 }
 
@@ -365,29 +368,13 @@ function renderSegmentsList() {
             inputs += mkInput('P3', Math.round(s.pwr3 * 100), 'pwr3', 'number', '%');
         }
 
-        function copySegment(id) {
-            const idx = segments.findIndex(s => s.id === id);
-            if (idx === -1) return;
-
-            // Deep copy the segment
-            const newSegment = JSON.parse(JSON.stringify(segments[idx]));
-            newSegment.id = Date.now() + Math.random(); // Assign new ID
-
-            // Insert after current segment
-            segments.splice(idx + 1, 0, newSegment);
-            updateUI();
-        }
-
-        // Touch-friendly Drag and Drop
-        // ... (omitted for brevity, keep existing code)
-
-        // ...
-
-        // In renderSegmentsList:
-
         div.innerHTML = `
             <div class="segment-header">
-                <span class="segment-type" style="display:flex; align-items:center;"><span style="margin-right:8px; color:#666; font-size:1.2rem;">☰</span>${s.type}</span>
+                <span class="segment-type" style="display:flex; align-items:center;">
+                    <!-- Drag Handle Icon -->
+                    <span class="drag-handle-icon" style="margin-right:8px; color:#666; font-size:1.4rem; padding:0 10px 0 0; touch-action:none;">☰</span>
+                    ${s.type}
+                </span>
                 <div class="segment-actions">
                     <button class="btn-icon" onclick="moveSegment(${s.id}, -1)">▲</button>
                     <button class="btn-icon" onclick="moveSegment(${s.id}, 1)">▼</button>
@@ -399,7 +386,8 @@ function renderSegmentsList() {
         `;
         list.appendChild(div);
 
-        // Attach touch listeners to the HEADER only
+        // Attach touch listeners to the HEADER (which contains the handle)
+        // Note: The handleTouchStart will now filter for .drag-handle-icon
         const header = div.querySelector('.segment-header');
         header.addEventListener('touchstart', handleTouchStart, { passive: false });
         header.addEventListener('touchmove', handleTouchMove, { passive: false });
