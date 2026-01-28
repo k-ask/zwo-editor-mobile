@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error("Chart init failed", e);
     }
 
-    document.getElementById('addBtn').addEventListener('click', showModal);
+    // document.getElementById('addBtn').addEventListener('click', showModal); // Removed: Not exists in mobile
     document.getElementById('loadBtn').addEventListener('click', () => document.getElementById('fileInput').click());
     document.getElementById('fileInput').addEventListener('change', loadFile);
     document.getElementById('saveBtn').addEventListener('click', saveWorkout);
