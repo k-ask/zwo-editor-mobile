@@ -110,6 +110,11 @@ function calculateTSS() {
             // Off segment
             let offTSS = (s.off_duration / 3600) * (s.off_power * s.off_power) * 100;
             totalTSS += (onTSS + offTSS) * s.repeat;
+        } else if (s.type === 'IntervalsBlock3') {
+            let tss1 = (s.dur1 / 3600) * (s.pwr1 * s.pwr1) * 100;
+            let tss2 = (s.dur2 / 3600) * (s.pwr2 * s.pwr2) * 100;
+            let tss3 = (s.dur3 / 3600) * (s.pwr3 * s.pwr3) * 100;
+            totalTSS += (tss1 + tss2 + tss3) * s.repeat;
         } else if (['Warmup', 'CoolDown', 'Ramp'].includes(s.type)) {
             // Approximate linear ramp TSS: integrate (start + (end-start)*t/T)^2
             // Simplification: use average power for short ramps, or exact formula
@@ -127,7 +132,11 @@ function calculateTSS() {
 
 function updateStats() {
     let totalSec = 0;
-    segments.forEach(s => totalSec += (s.type === 'IntervalsT') ? s.repeat * (s.on_duration + s.off_duration) : s.duration);
+    segments.forEach(s => {
+        if (s.type === 'IntervalsT') totalSec += s.repeat * (s.on_duration + s.off_duration);
+        else if (s.type === 'IntervalsBlock3') totalSec += s.repeat * (s.dur1 + s.dur2 + s.dur3);
+        else totalSec += s.duration;
+    });
     document.getElementById('totalDuration').innerText = formatTime(totalSec);
     document.getElementById('totalTSS').innerText = `TSS: ${calculateTSS()}`;
 }
@@ -153,6 +162,21 @@ function updateChart() {
                 currentTime += s.off_duration;
                 data.push({ x: currentTime, y: s.off_power });
             }
+        } else if (s.type === 'IntervalsBlock3') {
+            for (let i = 0; i < s.repeat; i++) {
+                // Step 1
+                data.push({ x: currentTime, y: s.pwr1 });
+                currentTime += s.dur1;
+                data.push({ x: currentTime, y: s.pwr1 });
+                // Step 2
+                data.push({ x: currentTime, y: s.pwr2 });
+                currentTime += s.dur2;
+                data.push({ x: currentTime, y: s.pwr2 });
+                // Step 3
+                data.push({ x: currentTime, y: s.pwr3 });
+                currentTime += s.dur3;
+                data.push({ x: currentTime, y: s.pwr3 });
+            }
         } else {
             data.push({ x: currentTime, y: 0.5 });
             currentTime += s.duration;
@@ -175,6 +199,13 @@ function addSegment(type, defaults = {}) {
     else if (type === 'CoolDown') { base.power_low = 0.75; base.power_high = 0.25; }
     else if (type === 'SteadyState') { base.power = 0.85; }
     else if (type === 'IntervalsT') { base.repeat = 5; base.on_duration = 60; base.off_duration = 60; base.on_power = 1.0; base.off_power = 0.5; base.duration = 0; }
+    else if (type === 'IntervalsBlock3') {
+        base.repeat = 3;
+        base.dur1 = 60; base.pwr1 = 0.65;
+        base.dur2 = 60; base.pwr2 = 0.85;
+        base.dur3 = 60; base.pwr3 = 1.05;
+        base.duration = 0;
+    }
 
     segments.push({ ...base, ...defaults });
     updateUI();
@@ -200,9 +231,22 @@ function moveSegment(id, dir) {
 function updateSegment(id, field, value) {
     const s = segments.find(s => s.id === id);
     if (!s) return;
-    if (field.includes('power')) s[field] = parseFloat(value) / 100;
-    else if (field.includes('duration')) s[field] = parseTime(value);
+    if (field.includes('power') || field.includes('pwr')) s[field] = parseFloat(value) / 100;
+    else if (field.includes('duration') || field.includes('dur')) s[field] = parseTime(value);
     else s[field] = parseInt(value);
+    updateUI();
+}
+
+function copySegment(id) {
+    const idx = segments.findIndex(s => s.id === id);
+    if (idx === -1) return;
+
+    // Deep copy the segment
+    const newSegment = JSON.parse(JSON.stringify(segments[idx]));
+    newSegment.id = Date.now() + Math.random(); // Assign new ID
+
+    // Insert after current segment
+    segments.splice(idx + 1, 0, newSegment);
     updateUI();
 }
 
@@ -308,7 +352,38 @@ function renderSegmentsList() {
             inputs += mkInput('Pwr', Math.round(s.on_power * 100), 'on_power', 'number', '%');
             inputs += mkInput('Off', formatTime(s.off_duration), 'off_duration', 'text');
             inputs += mkInput('Pwr', Math.round(s.off_power * 100), 'off_power', 'number', '%');
+        } else if (s.type === 'IntervalsBlock3') {
+            inputs += mkInput('Reps', s.repeat, 'repeat', 'number');
+            inputs += `<div style="width:100%; height:1px; background:#444; margin:4px 0;"></div>`;
+            inputs += mkInput('D1', formatTime(s.dur1), 'dur1', 'text');
+            inputs += mkInput('P1', Math.round(s.pwr1 * 100), 'pwr1', 'number', '%');
+            inputs += `<div style="flex-basis:100%"></div>`;
+            inputs += mkInput('D2', formatTime(s.dur2), 'dur2', 'text');
+            inputs += mkInput('P2', Math.round(s.pwr2 * 100), 'pwr2', 'number', '%');
+            inputs += `<div style="flex-basis:100%"></div>`;
+            inputs += mkInput('D3', formatTime(s.dur3), 'dur3', 'text');
+            inputs += mkInput('P3', Math.round(s.pwr3 * 100), 'pwr3', 'number', '%');
         }
+
+        function copySegment(id) {
+            const idx = segments.findIndex(s => s.id === id);
+            if (idx === -1) return;
+
+            // Deep copy the segment
+            const newSegment = JSON.parse(JSON.stringify(segments[idx]));
+            newSegment.id = Date.now() + Math.random(); // Assign new ID
+
+            // Insert after current segment
+            segments.splice(idx + 1, 0, newSegment);
+            updateUI();
+        }
+
+        // Touch-friendly Drag and Drop
+        // ... (omitted for brevity, keep existing code)
+
+        // ...
+
+        // In renderSegmentsList:
 
         div.innerHTML = `
             <div class="segment-header">
@@ -316,6 +391,7 @@ function renderSegmentsList() {
                 <div class="segment-actions">
                     <button class="btn-icon" onclick="moveSegment(${s.id}, -1)">▲</button>
                     <button class="btn-icon" onclick="moveSegment(${s.id}, 1)">▼</button>
+                    <button class="btn-icon" onclick="copySegment(${s.id})" title="Duplicate">❐</button>
                     <button class="btn-icon" onclick="removeSegment(${s.id})">✕</button>
                 </div>
             </div>
@@ -339,6 +415,13 @@ function saveWorkout() {
         if (s.type === 'SteadyState') xml += `<SteadyState Duration="${s.duration}" Power="${s.power}"/>`;
         else if (['Warmup', 'CoolDown', 'Ramp'].includes(s.type)) xml += `<${s.type} Duration="${s.duration}" PowerLow="${s.power_low}" PowerHigh="${s.power_high}"/>`;
         else if (s.type === 'IntervalsT') xml += `<IntervalsT Repeat="${s.repeat}" OnDuration="${s.on_duration}" OffDuration="${s.off_duration}" OnPower="${s.on_power}" OffPower="${s.off_power}"/>`;
+        else if (s.type === 'IntervalsBlock3') {
+            for (let i = 0; i < s.repeat; i++) {
+                xml += `<SteadyState Duration="${s.dur1}" Power="${s.pwr1}"/>`;
+                xml += `<SteadyState Duration="${s.dur2}" Power="${s.pwr2}"/>`;
+                xml += `<SteadyState Duration="${s.dur3}" Power="${s.pwr3}"/>`;
+            }
+        }
     });
     xml += `</workout></workout_file>`;
     const blob = new Blob([xml], { type: "application/xml" });
@@ -346,4 +429,108 @@ function saveWorkout() {
     const a = document.createElement('a'); a.href = url; a.download = "workout.zwo"; a.click();
 }
 
-function loadFile(e) { /* Implementation omitted for brevity, similar to desktop but simplified */ }
+
+
+function loadFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        const text = e.target.result;
+        // Simple regex parsing for ZWO (very basic support)
+        // ... (Skipping full parser implementation to keep it simple as per previous instruction/stub status)
+        alert("File loading not fully implemented in this mobile demo yet. Please use the Library.");
+    };
+    reader.readAsText(file);
+}
+
+// --- Workout Library (LocalStorage) ---
+
+function openLibrary() {
+    document.getElementById('libraryModal').style.display = 'flex';
+    renderLibrary();
+}
+
+function closeLibrary() {
+    document.getElementById('libraryModal').style.display = 'none';
+}
+
+function getLibrary() {
+    const data = localStorage.getItem('zwo_library');
+    return data ? JSON.parse(data) : [];
+}
+
+function saveToLibrary() {
+    const nameInput = document.getElementById('workoutName');
+    const name = nameInput.value.trim() || 'Untitled Workout';
+    if (segments.length === 0) { alert('Workout is empty!'); return; }
+
+    const lib = getLibrary();
+    const newEntry = {
+        id: Date.now(),
+        name: name,
+        date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString(),
+        segments: segments
+    };
+
+    lib.unshift(newEntry); // Add to top
+    localStorage.setItem('zwo_library', JSON.stringify(lib));
+
+    nameInput.value = '';
+    renderLibrary();
+    alert('Saved to Library!');
+}
+
+function loadFromLibrary(id) {
+    const lib = getLibrary();
+    const entry = lib.find(item => item.id === id);
+    if (entry) {
+        if (confirm(`Load "${entry.name}"? Unsaved changes will be lost.`)) {
+            // Restore segments
+            segments = JSON.parse(JSON.stringify(entry.segments)); // Deep copy to detach references
+            // Ensure IDs are unique just in case (optional, but good practice if mixed)
+            segments.forEach(s => {
+                if (!s.id) s.id = Math.random();
+                // Ensure proper numeric conversion if JSON stringified types
+                // (JSON preserves numbers, so usually fine)
+            });
+            updateUI();
+            closeLibrary();
+        }
+    }
+}
+
+function deleteFromLibrary(id) {
+    if (!confirm('Delete this workout?')) return;
+    let lib = getLibrary();
+    lib = lib.filter(item => item.id !== id);
+    localStorage.setItem('zwo_library', JSON.stringify(lib));
+    renderLibrary();
+}
+
+function renderLibrary() {
+    const list = document.getElementById('libraryList');
+    list.innerHTML = '';
+    const lib = getLibrary();
+
+    if (lib.length === 0) {
+        list.innerHTML = '<div style="padding:20px; text-align:center; color:#888;">No saved workouts</div>';
+        return;
+    }
+
+    lib.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'lib-item';
+        div.innerHTML = `
+            <div class="lib-info">
+                <div class="lib-name">${item.name}</div>
+                <div class="lib-date">${item.date} • ${item.segments.length} segments</div>
+            </div>
+            <div class="lib-actions">
+                <button class="lib-btn lib-load" onclick="loadFromLibrary(${item.id})">Load</button>
+                <button class="lib-btn lib-del" onclick="deleteFromLibrary(${item.id})">Del</button>
+            </div>
+        `;
+        list.appendChild(div);
+    });
+}
