@@ -29,6 +29,98 @@ body {
 
 /* ... existing styles ... */
 
+header {
+    background: #121212;
+    padding: 10px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #333;
+    z-index: 10;
+    flex-shrink: 0;
+}
+
+header h1 {
+    font-size: 1.2rem;
+    margin: 0;
+    color: var(--accent-color);
+}
+
+#totalDuration {
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+#graphContainer {
+    height: 120px;
+    /* Reduced from 180px */
+    background: #121212;
+    padding: 5px 10px;
+    flex-shrink: 0;
+}
+
+.quick-add-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px 10px;
+    background: #1a1a1a;
+    border-bottom: 1px solid #333;
+    flex-shrink: 0;
+}
+
+.qa-row {
+    display: flex;
+    overflow-x: auto;
+    gap: 8px;
+    scrollbar-width: none;
+}
+
+.qa-row::-webkit-scrollbar {
+    display: none;
+}
+
+.zones .qa-btn {
+    padding: 6px 12px;
+    min-width: 45px;
+    text-align: center;
+}
+
+.z1 {
+    border-bottom: 3px solid #7f7f7f !important;
+}
+
+.z2 {
+    border-bottom: 3px solid #3284c9 !important;
+}
+
+.z3 {
+    border-bottom: 3px solid #5aca5a !important;
+}
+
+.z4 {
+    border-bottom: 3px solid #ffca28 !important;
+}
+
+.z5 {
+    border-bottom: 3px solid #ff6924 !important;
+}
+
+.z6 {
+    border-bottom: 3px solid #ff3737 !important;
+}
+
+.qa-btn {
+    flex: 0 0 auto;
+    background: #333;
+    border: none;
+    color: white;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
 #segmentsList {
     flex: 1;
     /* Take remaining vertical space */
