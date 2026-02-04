@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ZWO Editor Mobile</title>
-    <link rel="stylesheet" href="style.css?v=1.1">
+    <link rel="stylesheet" href="style.css?v=1.2">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1e1e1e">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -15,10 +15,14 @@
 
 <body>
     <header>
-        <h1>ZWO editor mobile <span style="font-size:0.8rem; color:#888;">v1.1</span> <span
+        <h1>ZWO editor mobile <span style="font-size:0.8rem; color:#888;">v1.2</span> <span
                 style="font-size:0.8rem; color:#888; margin-left:5px;">made by</span> <a
                 href="https://www.youtube.com/@velo-ology" target="_blank"
-                style="font-size:0.8rem; color:#608ac1; text-decoration:underline;">"velo-ology ch"</a></h1>
+                style="font-size:0.8rem; color:#608ac1; text-decoration:underline;">"velo-ology ch"</a> <span
+                style="font-size:0.8rem; color:#888; margin-left:15px;">Switch to </span><a
+                href="https://k-ask.github.io/zwo-editor/" target="_blank"
+                style="font-size:0.8rem; color:#608ac1; text-decoration:underline;">Desktop</a><span
+                style="font-size:0.8rem; color:#888;"> View</span></h1>
         <div class="stats">
             <div id="totalDuration">00:00</div>
             <div id="totalTSS" style="margin-left:10px; color:#aaa; font-size:0.9rem;">TSS: 0</div>
@@ -91,7 +95,7 @@
     </div>
 
     <script src="workouts.js"></script>
-    <script src="editor.js?v=1.1"></script>
+    <script src="editor.js?v=1.2"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
