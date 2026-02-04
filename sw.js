@@ -1,11 +1,11 @@
-const CACHE_NAME = 'zwo-mobile-v1.2';
+const CACHE_NAME = 'zwo-editor-v1.3';
 const ASSETS = [
-    '/zwo-editor-mobile/',
-    '/zwo-editor-mobile/index.html?v=1.2',
-    '/zwo-editor-mobile/style.css?v=1.2',
-    '/zwo-editor-mobile/editor.js?v=1.2',
-    '/zwo-editor-mobile/workouts.js?v=1.2',
-    '/zwo-editor-mobile/manifest.json',
+    './',
+    './index.html',
+    './style.css?v=1.3',
+    './editor.js?v=1.3',
+    './workouts.js',
+    './manifest.json',
     'https://cdn.jsdelivr.net/npm/chart.js'
 ];
 

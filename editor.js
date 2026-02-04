@@ -448,26 +448,65 @@ function renderSegmentsList() {
 }
 
 // ZWO Generation (Simplified for Mobile)
-function saveWorkout() {
-    const name = "Mobile Workout";
-    let xml = `<?xml version="1.0" encoding="UTF-8"?><workout_file><author>Zwifter</author><name>${name}</name><description></description><sportType>bike</sportType><workout>`;
-    segments.forEach(s => {
-        if (s.type === 'SteadyState') xml += `<SteadyState Duration="${s.duration}" Power="${s.power}"/>`;
-        else if (['Warmup', 'CoolDown', 'Ramp'].includes(s.type)) xml += `<${s.type} Duration="${s.duration}" PowerLow="${s.power_low}" PowerHigh="${s.power_high}"/>`;
-        else if (s.type === 'IntervalsT') xml += `<IntervalsT Repeat="${s.repeat}" OnDuration="${s.on_duration}" OffDuration="${s.off_duration}" OnPower="${s.on_power}" OffPower="${s.off_power}"/>`;
+// ZWO Generation (Refactored)
+function generateZWO(workout) {
+    const name = workout.name || "Mobile Workout";
+    const author = workout.author || "Zwifter";
+    const description = workout.description || "";
+
+    let xml = `<?xml version="1.0" encoding="UTF-8"?><workout_file>\n`;
+    xml += `<author>${author}</author>\n`;
+    xml += `<name>${name}</name>\n`;
+    xml += `<description>${description}</description>\n`;
+    xml += `<sportType>bike</sportType>\n`;
+    xml += `<workout>\n`;
+
+    workout.segments.forEach(s => {
+        if (s.type === 'SteadyState') xml += `<SteadyState Duration="${s.duration}" Power="${s.power}"/>\n`;
+        else if (['Warmup', 'CoolDown', 'Ramp'].includes(s.type)) xml += `<${s.type} Duration="${s.duration}" PowerLow="${s.power_low}" PowerHigh="${s.power_high}"/>\n`;
+        else if (s.type === 'IntervalsT') xml += `<IntervalsT Repeat="${s.repeat}" OnDuration="${s.on_duration}" OffDuration="${s.off_duration}" OnPower="${s.on_power}" OffPower="${s.off_power}"/>\n`;
         else if (s.type === 'IntervalsBlock3') {
             for (let i = 0; i < s.repeat; i++) {
-                xml += `<SteadyState Duration="${s.dur1}" Power="${s.pwr1}"/>`;
-                xml += `<SteadyState Duration="${s.dur2}" Power="${s.pwr2}"/>`;
-                xml += `<SteadyState Duration="${s.dur3}" Power="${s.pwr3}"/>`;
+                xml += `<SteadyState Duration="${s.dur1}" Power="${s.pwr1}"/>\n`;
+                xml += `<SteadyState Duration="${s.dur2}" Power="${s.pwr2}"/>\n`;
+                xml += `<SteadyState Duration="${s.dur3}" Power="${s.pwr3}"/>\n`;
             }
         }
     });
     xml += `</workout></workout_file>`;
+    return xml;
+}
+
+function triggerDownload(xml, filename) {
     const blob = new Blob([xml], { type: "application/xml" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = "workout.zwo"; a.click();
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a); // Append for Firefox support
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 100);
 }
+
+function saveWorkout() {
+    const workout = {
+        name: "Mobile Workout",
+        segments: segments
+    };
+    const xml = generateZWO(workout);
+    triggerDownload(xml, "workout.zwo");
+}
+
+function downloadLibraryWorkout(id) {
+    const item = STATIC_WORKOUTS.find(w => w.id == id);
+    if (!item) return;
+
+    const xml = generateZWO(item);
+    const filename = `${item.name.replace(/[^a-z0-9]/gi, '_')}.zwo`;
+    triggerDownload(xml, filename);
+}
+
 
 
 
@@ -529,6 +568,7 @@ function renderLibrary() {
             </div>
             <div class="lib-actions">
                 <button class="lib-btn lib-load" onclick="loadFromLibrary('${item.id}')">Load</button>
+                <button class="lib-btn lib-dl" onclick="downloadLibraryWorkout('${item.id}')" style="background:#444; margin-left:5px;">DL</button>
             </div>
         `;
         list.appendChild(div);
