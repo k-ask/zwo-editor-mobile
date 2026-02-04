@@ -53,6 +53,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
         updateUI();
+
+        // Check for URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('segments')) {
+            try {
+                const segData = JSON.parse(decodeURIComponent(urlParams.get('segments')));
+                const name = urlParams.get('name') ? decodeURIComponent(urlParams.get('name')) : 'Imported Workout';
+                if (Array.isArray(segData)) {
+                    // Load data
+                    segments = segData;
+                    // Ensure IDs
+                    segments.forEach(s => { if (!s.id) s.id = Date.now() + Math.random(); });
+                    document.title = name + " - ZWO Editor";
+                    // Just a visual cue? Maybe show an alert or just update UI.
+                    updateUI();
+                    console.log("Loaded workout from URL:", name);
+                }
+            } catch (e) {
+                console.error("Failed to parse URL segments", e);
+            }
+        }
+
     } catch (e) {
         console.error("UI update failed", e);
     }
@@ -462,7 +484,7 @@ function loadFile(e) {
     reader.readAsText(file);
 }
 
-// --- Workout Library (LocalStorage) ---
+// --- Workout Library (Static) ---
 
 function openLibrary() {
     document.getElementById('libraryModal').style.display = 'flex';
@@ -473,82 +495,117 @@ function closeLibrary() {
     document.getElementById('libraryModal').style.display = 'none';
 }
 
-function getLibrary() {
-    const data = localStorage.getItem('zwo_library');
-    return data ? JSON.parse(data) : [];
-}
-
-function saveToLibrary() {
-    const nameInput = document.getElementById('workoutName');
-    const name = nameInput.value.trim() || 'Untitled Workout';
-    if (segments.length === 0) { alert('Workout is empty!'); return; }
-
-    const lib = getLibrary();
-    const newEntry = {
-        id: Date.now(),
-        name: name,
-        date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString(),
-        segments: segments
-    };
-
-    lib.unshift(newEntry); // Add to top
-    localStorage.setItem('zwo_library', JSON.stringify(lib));
-
-    nameInput.value = '';
-    renderLibrary();
-    alert('Saved to Library!');
-}
-
 function loadFromLibrary(id) {
-    const lib = getLibrary();
-    const entry = lib.find(item => item.id === id);
+    const entry = STATIC_WORKOUTS.find(item => item.id == id); // Loose equality for consistency
     if (entry) {
         if (confirm(`Load "${entry.name}"? Unsaved changes will be lost.`)) {
             // Restore segments
-            segments = JSON.parse(JSON.stringify(entry.segments)); // Deep copy to detach references
-            // Ensure IDs are unique just in case (optional, but good practice if mixed)
-            segments.forEach(s => {
-                if (!s.id) s.id = Math.random();
-                // Ensure proper numeric conversion if JSON stringified types
-                // (JSON preserves numbers, so usually fine)
-            });
+            segments = JSON.parse(JSON.stringify(entry.segments));
+            segments.forEach(s => s.id = Date.now() + Math.random());
             updateUI();
             closeLibrary();
         }
     }
 }
 
-function deleteFromLibrary(id) {
-    if (!confirm('Delete this workout?')) return;
-    let lib = getLibrary();
-    lib = lib.filter(item => item.id !== id);
-    localStorage.setItem('zwo_library', JSON.stringify(lib));
-    renderLibrary();
-}
-
 function renderLibrary() {
     const list = document.getElementById('libraryList');
     list.innerHTML = '';
-    const lib = getLibrary();
 
-    if (lib.length === 0) {
-        list.innerHTML = '<div style="padding:20px; text-align:center; color:#888;">No saved workouts</div>';
+    if (typeof STATIC_WORKOUTS === 'undefined' || STATIC_WORKOUTS.length === 0) {
+        list.innerHTML = '<div style="padding:20px; text-align:center; color:#888;">No workouts found in workouts.js</div>';
         return;
     }
 
-    lib.forEach(item => {
+    STATIC_WORKOUTS.forEach(item => {
         const div = document.createElement('div');
         div.className = 'lib-item';
+        // Calculate basic stats for display if not present
+        const segCount = item.segments ? item.segments.length : 0;
         div.innerHTML = `
             <div class="lib-info">
                 <div class="lib-name">${item.name}</div>
-                <div class="lib-date">${item.date} • ${item.segments.length} segments</div>
+                <div class="lib-date">${item.description || ''} • ${segCount} segments</div>
             </div>
             <div class="lib-actions">
-                <button class="lib-btn lib-load" onclick="loadFromLibrary(${item.id})">Load</button>
-                <button class="lib-btn lib-del" onclick="deleteFromLibrary(${item.id})">Del</button>
+                <button class="lib-btn lib-load" onclick="loadFromLibrary('${item.id}')">Load</button>
             </div>
         `;
         list.appendChild(div);
     });
+}
+
+// --- Recommendation System Integration ---
+
+function openRecModal() {
+    document.getElementById('recommendModal').style.display = 'flex';
+    // Run default recommendation on open
+    runRecommendation();
+}
+
+function closeRecModal() {
+    document.getElementById('recommendModal').style.display = 'none';
+}
+
+function runRecommendation() {
+    const objective = document.getElementById('recObjective').value;
+    const maxDuration = parseInt(document.getElementById('recDuration').value);
+    const sourceInputs = document.getElementsByName('recSource');
+    let source = 'All';
+    for (let input of sourceInputs) {
+        if (input.checked) source = input.value;
+    }
+
+    const results = Recommender.recommend({
+        objective: objective,
+        maxDuration: maxDuration,
+        source: source
+    });
+
+    renderRecResults(results);
+}
+
+function renderRecResults(results) {
+    const container = document.getElementById('recResults');
+    container.innerHTML = '';
+
+    if (results.length === 0) {
+        container.innerHTML = '<div style="padding:20px; text-align:center; color:#888;">No workouts found matching criteria</div>';
+        return;
+    }
+
+    results.forEach(w => {
+        const div = document.createElement('div');
+        div.className = 'lib-item'; // Reuse library styling
+        // Tag badges
+        const tagsHtml = w.tags.map(t => `<span style="background:#444; padding:2px 6px; border-radius:4px; font-size:0.75rem; margin-right:4px;">${t}</span>`).join('');
+
+        div.innerHTML = `
+            <div class="lib-info">
+                <div class="lib-name">${w.name} <span style="font-size:0.8rem; color:var(--accent-color);">(${w.source})</span></div>
+                <div class="lib-date">⏱ ${Math.round(w.durationSec / 60)}m • TSS: ${w.tss}</div>
+                <div style="margin-top:4px; font-size:0.85rem; color:#ccc;">${w.description}</div>
+                <div style="margin-top:6px;">${tagsHtml}</div>
+            </div>
+            <div class="lib-actions">
+                <button class="lib-btn lib-load" onclick="loadRecommendedWorkout('${w.id}')">Load</button>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+function loadRecommendedWorkout(id) {
+    const workout = BUILT_IN_WORKOUTS.find(w => w.id === id);
+    if (!workout) return;
+
+    if (confirm(`Load "${workout.name}"? Current workout will be cleared.`)) {
+        // Deep copy segments
+        segments = JSON.parse(JSON.stringify(workout.segments));
+        // Add IDs
+        segments.forEach(s => s.id = Date.now() + Math.random());
+
+        updateUI();
+        closeRecModal();
+    }
 }
