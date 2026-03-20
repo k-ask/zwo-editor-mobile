@@ -268,9 +268,16 @@ function copySegment(id) {
     const newSegment = JSON.parse(JSON.stringify(segments[idx]));
     newSegment.id = Date.now() + Math.random(); // Assign new ID
 
-    // Insert after current segment
-    segments.splice(idx + 1, 0, newSegment);
+    // Append to end
+    segments.push(newSegment);
     updateUI();
+}
+
+function clearAllSegments() {
+    if (confirm("Are you sure you want to clear all segments?")) {
+        segments = [];
+        updateUI();
+    }
 }
 
 // Touch-friendly Drag and Drop

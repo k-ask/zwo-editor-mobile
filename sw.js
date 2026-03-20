@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zwo-editor-v1.3.1';
+const CACHE_NAME = 'zwo-editor-v1.4-1772495699';
 const ASSETS = [
     './',
     './index.html',
@@ -29,8 +29,8 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
-    // Network first for workouts.js so users always get the latest library if online
-    if (e.request.url.includes('workouts.js')) {
+    // Network first for HTML (navigations) and workouts.js
+    if (e.request.mode === 'navigate' || e.request.url.includes('workouts.js')) {
         e.respondWith(
             fetch(e.request)
                 .then(response => {
