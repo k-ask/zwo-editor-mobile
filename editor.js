@@ -274,10 +274,8 @@ function copySegment(id) {
 }
 
 function clearAllSegments() {
-    if (confirm("Are you sure you want to clear all segments?")) {
-        segments = [];
-        updateUI();
-    }
+    segments = [];
+    updateUI();
 }
 
 // Touch-friendly Drag and Drop
@@ -544,13 +542,11 @@ function closeLibrary() {
 function loadFromLibrary(id) {
     const entry = STATIC_WORKOUTS.find(item => item.id == id); // Loose equality for consistency
     if (entry) {
-        if (confirm(`Load "${entry.name}"? Unsaved changes will be lost.`)) {
-            // Restore segments
-            segments = JSON.parse(JSON.stringify(entry.segments));
-            segments.forEach(s => s.id = Date.now() + Math.random());
-            updateUI();
-            closeLibrary();
-        }
+        // Restore segments
+        segments = JSON.parse(JSON.stringify(entry.segments));
+        segments.forEach(s => s.id = Date.now() + Math.random());
+        updateUI();
+        closeLibrary();
     }
 }
 
@@ -646,13 +642,11 @@ function loadRecommendedWorkout(id) {
     const workout = BUILT_IN_WORKOUTS.find(w => w.id === id);
     if (!workout) return;
 
-    if (confirm(`Load "${workout.name}"? Current workout will be cleared.`)) {
-        // Deep copy segments
-        segments = JSON.parse(JSON.stringify(workout.segments));
-        // Add IDs
-        segments.forEach(s => s.id = Date.now() + Math.random());
+    // Deep copy segments
+    segments = JSON.parse(JSON.stringify(workout.segments));
+    // Add IDs
+    segments.forEach(s => s.id = Date.now() + Math.random());
 
-        updateUI();
-        closeRecModal();
-    }
+    updateUI();
+    closeRecModal();
 }
